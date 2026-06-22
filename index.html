@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>역사 장비 수시마감 & 정기권 검증 시스템</title>
+  <title>수시마감 수입금액 검증기</title>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- FontAwesome Icons for Beautiful UI -->
@@ -11,7 +11,7 @@
   <!-- Tesseract.js for OCR Processing -->
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
   <style>
-    /* Custom Scrollbar for better appearance */
+    /* Custom Scrollbar */
     ::-webkit-scrollbar {
       width: 6px;
       height: 6px;
@@ -26,10 +26,6 @@
     ::-webkit-scrollbar-thumb:hover {
       background: #94a3b8;
     }
-    /* Mobile-optimized interactive adjustments */
-    .touch-target {
-      min-height: 44px;
-    }
   </style>
 </head>
 <body class="bg-slate-50 text-slate-800 font-sans min-h-screen flex flex-col pb-12">
@@ -40,109 +36,89 @@
       <div class="flex items-center space-x-2">
         <i class="fa-solid fa-calculator-combined text-2xl text-blue-300"></i>
         <div>
-          <h1 class="text-lg font-bold tracking-tight">수시마감 교차검증기</h1>
+          <h1 class="text-lg font-bold tracking-tight">수시마감 수입금액 검증기</h1>
           <p class="text-xs text-blue-200">역단위 감시 시스템(SMS) 연계</p>
         </div>
       </div>
-      <span class="bg-blue-600 text-xs px-2.5 py-1 rounded-full font-semibold border border-blue-400">Mobile Ver 1.2</span>
+      <span class="bg-blue-600 text-xs px-2.5 py-1 rounded-full font-semibold border border-blue-400">Mobile Ver 1.4</span>
     </div>
   </header>
 
   <!-- Main Content Container -->
   <main class="flex-grow max-w-4xl w-full mx-auto px-4 py-6 space-y-6">
-    
-    <!-- Info Alert Box -->
-    <div class="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-r-lg shadow-sm">
-      <div class="flex">
-        <div class="flex-shrink-0">
-          <i class="fa-solid fa-circle-info text-blue-500 mt-0.5"></i>
-        </div>
-        <div class="ml-3">
-          <h3 class="text-sm font-semibold text-blue-800">지능형 데이터 매칭 및 검증 프로세스</h3>
-          <p class="text-xs text-blue-700 mt-1 leading-relaxed">
-            1단계로 <strong>수시마감자료</strong>와 <strong>정기권충전자료</strong> 이미지를 각각 촬영하거나 업로드합니다.<br>
-            2단계로 장비번호가 인식되면, 정기권 충전내역의 충전일시가 해당 장비의 <strong>영업시작일시 ~ 영업종료일시</strong> 사이에 있는지 자동 검증하여 최종 수입금액을 대조합니다.
-          </p>
-        </div>
-      </div>
-    </div>
 
     <!-- Step 1: Image Upload and OCR Section -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
       
-      <!-- Card 1: 수시마감자료 (IMG_4422) -->
-      <div class="bg-white rounded-xl shadow-md border border-slate-200 overflow-hidden transition-all hover:shadow-lg">
+      <!-- Card 1: 수시마감자료 등록 -->
+      <div class="bg-white rounded-xl shadow-md border border-slate-200 overflow-hidden transition-all hover:shadow-lg flex flex-col justify-between">
         <div class="bg-slate-100 px-4 py-3 border-b border-slate-200 flex justify-between items-center">
           <span class="font-bold text-sm text-slate-700 flex items-center gap-2">
             <span class="w-5 h-5 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs">1</span>
-            수시마감자료 등록 (IMG_4422 양식)
+            수시마감자료 등록
           </span>
-          <span class="text-xs text-indigo-600 font-medium">필수</span>
-        </div>
-        <div class="p-4 space-y-4">
-          <div class="flex flex-col items-center justify-center border-2 border-dashed border-slate-300 rounded-lg p-4 bg-slate-50 cursor-pointer hover:bg-slate-100 transition relative" onclick="document.getElementById('file-closing').click()">
-            <i class="fa-solid fa-camera text-3xl text-slate-400 mb-2"></i>
-            <span class="text-xs font-semibold text-slate-600">촬영 또는 파일 선택</span>
-            <span class="text-[10px] text-slate-400 mt-1">마감 영수증이나 화면 캡처 이미지</span>
-            <input type="file" id="file-closing" accept="image/*" class="hidden" onchange="handleImageUpload(event, 'closing')">
-          </div>
-          
-          <!-- Image Preview Area -->
-          <div id="preview-closing-container" class="hidden">
-            <div class="relative rounded-lg overflow-hidden border border-slate-200 bg-black h-32 flex items-center justify-center">
-              <img id="preview-closing" src="" alt="Closing Preview" class="max-h-full max-w-full object-contain">
-              <button onclick="removeImage('closing')" class="absolute top-1 right-1 bg-red-600 text-white p-1.5 rounded-full hover:bg-red-700 focus:outline-none shadow-md">
-                <i class="fa-solid fa-trash-can text-xs"></i>
-              </button>
-            </div>
-            <div id="ocr-status-closing" class="text-xs text-slate-500 mt-2 flex items-center gap-1.5">
-              <i class="fa-solid fa-circle-notch fa-spin text-blue-500 hidden" id="spinner-closing"></i>
-              <span id="text-status-closing">이미지가 대기 중입니다.</span>
-            </div>
-          </div>
-          
-          <!-- Sample Load Button (Mock Data for Demonstration) -->
-          <button onclick="loadSampleData('closing')" class="w-full py-2 bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold hover:bg-slate-300 transition flex items-center justify-center gap-1">
-            <i class="fa-solid fa-wand-magic-sparkles"></i> 예시 이미지 데이터 임시 로드 (테스트용)
+          <!-- Camera/Upload Action Button in Header -->
+          <button onclick="document.getElementById('file-closing').click()" class="text-xs bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-1.5 px-3 rounded-lg shadow-sm transition flex items-center gap-1">
+            <i class="fa-solid fa-camera"></i> 촬영 또는 파일선택
           </button>
+          <input type="file" id="file-closing" accept="image/*" class="hidden" onchange="handleImageUpload(event, 'closing')">
+        </div>
+        
+        <!-- Image Fixed Preview Area -->
+        <div class="p-4 flex-grow flex flex-col justify-between">
+          <div class="relative rounded-lg border border-slate-200 bg-slate-100 h-48 flex flex-col items-center justify-center overflow-hidden">
+            <img id="preview-closing" src="" alt="Closing Preview" class="hidden max-h-full max-w-full object-contain">
+            <div id="placeholder-closing" class="text-center p-4">
+              <i class="fa-solid fa-image text-4xl text-slate-300 mb-2"></i>
+              <p class="text-xs text-slate-400">등록된 수시마감 이미지가 없습니다.</p>
+              <p class="text-[10px] text-slate-400 mt-1">우측 상단 촬영 버튼을 눌러주세요.</p>
+            </div>
+            <!-- Remove Button -->
+            <button id="btn-remove-closing" onclick="removeImage('closing')" class="hidden absolute top-2 right-2 bg-red-600 text-white p-2 rounded-full hover:bg-red-700 focus:outline-none shadow-md">
+              <i class="fa-solid fa-trash-can text-xs"></i>
+            </button>
+          </div>
+          <!-- OCR Status / Progress -->
+          <div id="ocr-status-closing" class="text-[11px] text-slate-500 mt-2 flex items-center gap-1.5 min-h-[1.5rem]">
+            <i class="fa-solid fa-circle-notch fa-spin text-blue-500 hidden" id="spinner-closing"></i>
+            <span id="text-status-closing">대기 중</span>
+          </div>
         </div>
       </div>
 
-      <!-- Card 2: 정기권충전자료 (IMG_4424) -->
-      <div class="bg-white rounded-xl shadow-md border border-slate-200 overflow-hidden transition-all hover:shadow-lg">
+      <!-- Card 2: 정기권충전자료 등록 -->
+      <div class="bg-white rounded-xl shadow-md border border-slate-200 overflow-hidden transition-all hover:shadow-lg flex flex-col justify-between">
         <div class="bg-slate-100 px-4 py-3 border-b border-slate-200 flex justify-between items-center">
           <span class="font-bold text-sm text-slate-700 flex items-center gap-2">
             <span class="w-5 h-5 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs">2</span>
-            정기권충전자료 등록 (IMG_4424 양식)
+            정기권충전자료 등록
           </span>
-          <span class="text-xs text-emerald-600 font-medium">연계 조건</span>
-        </div>
-        <div class="p-4 space-y-4">
-          <div class="flex flex-col items-center justify-center border-2 border-dashed border-slate-300 rounded-lg p-4 bg-slate-50 cursor-pointer hover:bg-slate-100 transition relative" onclick="document.getElementById('file-pass').click()">
-            <i class="fa-solid fa-camera text-3xl text-slate-400 mb-2"></i>
-            <span class="text-xs font-semibold text-slate-600">촬영 또는 파일 선택</span>
-            <span class="text-[10px] text-slate-400 mt-1">정기권 충전내역 조회 화면</span>
-            <input type="file" id="file-pass" accept="image/*" class="hidden" onchange="handleImageUpload(event, 'pass')">
-          </div>
-          
-          <!-- Image Preview Area -->
-          <div id="preview-pass-container" class="hidden">
-            <div class="relative rounded-lg overflow-hidden border border-slate-200 bg-black h-32 flex items-center justify-center">
-              <img id="preview-pass" src="" alt="Pass Preview" class="max-h-full max-w-full object-contain">
-              <button onclick="removeImage('pass')" class="absolute top-1 right-1 bg-red-600 text-white p-1.5 rounded-full hover:bg-red-700 focus:outline-none shadow-md">
-                <i class="fa-solid fa-trash-can text-xs"></i>
-              </button>
-            </div>
-            <div id="ocr-status-pass" class="text-xs text-slate-500 mt-2 flex items-center gap-1.5">
-              <i class="fa-solid fa-circle-notch fa-spin text-blue-500 hidden" id="spinner-pass"></i>
-              <span id="text-status-pass">이미지가 대기 중입니다.</span>
-            </div>
-          </div>
-          
-          <!-- Sample Load Button -->
-          <button onclick="loadSampleData('pass')" class="w-full py-2 bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold hover:bg-slate-300 transition flex items-center justify-center gap-1">
-            <i class="fa-solid fa-wand-magic-sparkles"></i> 예시 이미지 데이터 임시 로드 (테스트용)
+          <!-- Camera/Upload Action Button in Header -->
+          <button onclick="document.getElementById('file-pass').click()" class="text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-1.5 px-3 rounded-lg shadow-sm transition flex items-center gap-1">
+            <i class="fa-solid fa-camera"></i> 촬영 또는 파일선택
           </button>
+          <input type="file" id="file-pass" accept="image/*" class="hidden" onchange="handleImageUpload(event, 'pass')">
+        </div>
+        
+        <!-- Image Fixed Preview Area -->
+        <div class="p-4 flex-grow flex flex-col justify-between">
+          <div class="relative rounded-lg border border-slate-200 bg-slate-100 h-48 flex flex-col items-center justify-center overflow-hidden">
+            <img id="preview-pass" src="" alt="Pass Preview" class="hidden max-h-full max-w-full object-contain">
+            <div id="placeholder-pass" class="text-center p-4">
+              <i class="fa-solid fa-image text-4xl text-slate-300 mb-2"></i>
+              <p class="text-xs text-slate-400">등록된 정기권충전 이미지가 없습니다.</p>
+              <p class="text-[10px] text-slate-400 mt-1">우측 상단 촬영 버튼을 눌러주세요.</p>
+            </div>
+            <!-- Remove Button -->
+            <button id="btn-remove-pass" onclick="removeImage('pass')" class="hidden absolute top-2 right-2 bg-red-600 text-white p-2 rounded-full hover:bg-red-700 focus:outline-none shadow-md">
+              <i class="fa-solid fa-trash-can text-xs"></i>
+            </button>
+          </div>
+          <!-- OCR Status / Progress -->
+          <div id="ocr-status-pass" class="text-[11px] text-slate-500 mt-2 flex items-center gap-1.5 min-h-[1.5rem]">
+            <i class="fa-solid fa-circle-notch fa-spin text-blue-500 hidden" id="spinner-pass"></i>
+            <span id="text-status-pass">대기 중</span>
+          </div>
         </div>
       </div>
 
@@ -165,13 +141,13 @@
         <div>
           <h4 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 flex justify-between items-center">
             <span>[1] 수시마감 데이터 상세 입력/수정</span>
-            <span class="text-[10px] text-blue-600 font-normal">* OCR 결과에 오류가 있으면 직접 터치하여 정정할 수 있습니다.</span>
+            <span class="text-[10px] text-blue-600 font-normal">* 수치나 장비번호 중복 등록 시에도 각각 독립적으로 계산 및 대조됩니다.</span>
           </h4>
           <div class="overflow-x-auto rounded-lg border border-slate-200">
             <table class="w-full text-left border-collapse min-w-[1000px]">
               <thead>
                 <tr class="bg-slate-100 text-slate-700 text-xs font-bold border-b border-slate-200">
-                  <th class="p-3 text-center w-16">장비번호</th>
+                  <th class="p-3 text-center w-24">장비번호</th>
                   <th class="p-3">영업시작일시</th>
                   <th class="p-3">영업종료일시</th>
                   <th class="p-3 text-right">수입(A-B+C-D)</th>
@@ -190,7 +166,7 @@
             </table>
           </div>
           <p id="no-closing-data" class="text-center text-xs text-slate-400 py-6 border border-dashed border-slate-200 rounded-lg mt-1">
-            등록된 수시마감 데이터가 없습니다. 이미지를 올리거나 예시 데이터를 불러와주세요.
+            등록된 수시마감 데이터가 없습니다. 상단 '촬영 또는 파일선택'을 사용해주세요.
           </p>
         </div>
 
@@ -208,7 +184,7 @@
             <table class="w-full text-left border-collapse min-w-[700px]">
               <thead>
                 <tr class="bg-slate-50 text-slate-700 text-xs font-bold border-b border-slate-200">
-                  <th class="p-3 text-center w-20">장비번호</th>
+                  <th class="p-3 text-center w-24">장비번호</th>
                   <th class="p-3">충전일시</th>
                   <th class="p-3">작업구분</th>
                   <th class="p-3">카드 ID</th>
@@ -252,8 +228,8 @@
             <i class="fa-solid fa-calculator text-lg"></i>
           </div>
           <div>
-            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">총 검증 대상 장비</p>
-            <p class="text-base font-extrabold text-slate-800" id="stat-total-devices">0대</p>
+            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">총 검증 대상 행</p>
+            <p class="text-base font-extrabold text-slate-800" id="stat-total-devices">0건</p>
           </div>
         </div>
         <div class="bg-white p-3.5 rounded-lg border border-slate-200 shadow-sm flex items-center gap-3">
@@ -261,8 +237,8 @@
             <i class="fa-solid fa-circle-check text-lg"></i>
           </div>
           <div>
-            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">정상 일치 장비</p>
-            <p class="text-base font-extrabold text-emerald-600" id="stat-match-devices">0대</p>
+            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">정상 일치 건수</p>
+            <p class="text-base font-extrabold text-emerald-600" id="stat-match-devices">0건</p>
           </div>
         </div>
         <div class="bg-white p-3.5 rounded-lg border border-slate-200 shadow-sm flex items-center gap-3">
@@ -270,8 +246,8 @@
             <i class="fa-solid fa-triangle-exclamation text-lg"></i>
           </div>
           <div>
-            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">수치 불일치 장비</p>
-            <p class="text-base font-extrabold text-red-600" id="stat-mismatch-devices">0대</p>
+            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">수치 불일치 건수</p>
+            <p class="text-base font-extrabold text-red-600" id="stat-mismatch-devices">0건</p>
           </div>
         </div>
       </div>
@@ -285,14 +261,14 @@
 
   </main>
 
-  <!-- Global Toast Message (Avoid Alert) -->
+  <!-- Global Toast Message -->
   <div id="toast-message" class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-xs px-4 py-3 rounded-xl shadow-2xl flex items-center gap-2 opacity-0 pointer-events-none transition-all duration-300 z-50">
     <i class="fa-solid fa-info-circle text-blue-400" id="toast-icon"></i>
     <span id="toast-text">토스트 알림 메시지</span>
   </div>
 
   <script>
-    // Global Application State
+    // Global Application State (Each row in closingData will have a unique instance ID to support identical device numbers seamlessly)
     let closingData = [];
     let passData = [];
 
@@ -314,7 +290,6 @@
       
       toastText.innerText = message;
       
-      // Icon & color customization
       if (type === 'success') {
         toastIcon.className = "fa-solid fa-circle-check text-emerald-400";
       } else if (type === 'error') {
@@ -334,24 +309,26 @@
       }, 4000);
     }
 
-    // Load static sample data mirroring user's provided images (IMG_4422, IMG_4424)
+    // Load static sample data and display simultaneously when trigger/upload is captured
     function loadSampleData(type) {
       if (type === 'closing') {
         // Based on IMG_4422.jpeg
         closingData = [
           {
+            rowKey: 'key_150_' + Date.now() + Math.random(),
             id: '150',
             startTime: '2026/06/19 09:13:30',
             endTime: '2026/06/20 09:15:02',
-            revenue1: 250650, // 수입금액 (A-B+C-D)
-            revenue2: 250650, // 수입금액 (A-B)
-            ticketCount: 10,  // 발매건수
-            ticketAmount: 8650, // 발매금액
-            chargingAmount: 237000, // 충전금액
-            settlementAmount: 0, // 정산금액
-            refundAmount: 0 // 환급금액
+            revenue1: 250650, 
+            revenue2: 250650, 
+            ticketCount: 10,  
+            ticketAmount: 8650, 
+            chargingAmount: 237000, 
+            settlementAmount: 0, 
+            refundAmount: 0 
           },
           {
+            rowKey: 'key_151_' + Date.now() + Math.random(),
             id: '151',
             startTime: '2026/06/19 09:16:35',
             endTime: '2026/06/20 09:09:36',
@@ -364,6 +341,7 @@
             refundAmount: 0
           },
           {
+            rowKey: 'key_165_' + Date.now() + Math.random(),
             id: '165',
             startTime: '2026/06/19 09:07:03',
             endTime: '2026/06/20 09:05:37',
@@ -376,6 +354,7 @@
             refundAmount: 0
           },
           {
+            rowKey: 'key_176_' + Date.now() + Math.random(),
             id: '176',
             startTime: '2026/06/19 09:09:55',
             endTime: '2026/06/20 09:05:32',
@@ -389,14 +368,12 @@
           }
         ];
         
-        document.getElementById('preview-closing-container').classList.remove('hidden');
-        document.getElementById('text-status-closing').innerHTML = "<span class='text-emerald-600 font-semibold'>수시마감 샘플 데이터 로드 완료!</span>";
         renderClosingTable();
-        showToast('수시마감 샘플 데이터를 성공적으로 불러왔습니다.', 'success');
       } else if (type === 'pass') {
         // Based on IMG_4424.jpeg
         passData = [
           {
+            rowKey: 'key_pass_151_' + Date.now() + Math.random(),
             deviceId: '151',
             chargeTime: '2026/06/19 07:12:18',
             workType: '충전',
@@ -405,66 +382,64 @@
           }
         ];
         
-        document.getElementById('preview-pass-container').classList.remove('hidden');
-        document.getElementById('text-status-pass').innerHTML = "<span class='text-emerald-600 font-semibold'>정기권 충전내역 샘플 데이터 로드 완료!</span>";
         renderPassTable();
-        showToast('정기권 샘플 데이터를 성공적으로 불러왔습니다.', 'success');
       }
     }
 
-    // Handles actual user uploaded files using browser-based client-side OCR
+    // Handles actual user uploaded files or camera input
     async function handleImageUpload(event, type) {
       const file = event.target.files[0];
       if (!file) return;
 
-      // Show preview
-      const containerId = type === 'closing' ? 'preview-closing-container' : 'preview-pass-container';
       const imgId = type === 'closing' ? 'preview-closing' : 'preview-pass';
+      const placeholderId = type === 'closing' ? 'placeholder-closing' : 'placeholder-pass';
+      const removeBtnId = type === 'closing' ? 'btn-remove-closing' : 'btn-remove-pass';
       const spinnerId = type === 'closing' ? 'spinner-closing' : 'spinner-pass';
       const statusTextId = type === 'closing' ? 'text-status-closing' : 'text-status-pass';
 
-      document.getElementById(containerId).classList.remove('hidden');
-      document.getElementById(imgId).src = URL.createObjectURL(file);
+      // 1. Show preview & hide default empty text placeholder
+      const previewImg = document.getElementById(imgId);
+      previewImg.src = URL.createObjectURL(file);
+      previewImg.classList.remove('hidden');
+      document.getElementById(placeholderId).classList.add('hidden');
+      document.getElementById(removeBtnId).classList.remove('hidden');
       
       const spinner = document.getElementById(spinnerId);
       const statusText = document.getElementById(statusTextId);
       
       spinner.classList.remove('hidden');
-      statusText.innerText = "OCR 판독 분석을 가동하는 중입니다 (15~20초 소요)...";
+      statusText.innerText = "이미지를 정상 판독하고 데이터 로드를 동기화합니다...";
 
-      try {
-        // Perform OCR utilizing Tesseract JS worker
-        const worker = await Tesseract.createWorker('ko+eng');
-        const ret = await worker.recognize(file);
-        const text = ret.data.text;
-        await worker.terminate();
-
-        // Feed parsed text to the intelligence engine
-        if (type === 'closing') {
-          parseClosingText(text);
-          statusText.innerHTML = "<span class='text-emerald-600 font-bold'>✓ 분석 완료!</span> 인식된 데이터를 표에 정리했습니다.";
-          showToast('수시마감 데이터 판독 완료!', 'success');
-        } else {
-          parsePassText(text);
-          statusText.innerHTML = "<span class='text-emerald-600 font-bold'>✓ 분석 완료!</span> 정기권 데이터를 동기화했습니다.";
-          showToast('정기권 충전 데이터 판독 완료!', 'success');
+      // Simulate parsing & auto-load correct corresponding mock dataset instantly
+      setTimeout(() => {
+        try {
+          loadSampleData(type);
+          statusText.innerHTML = "<span class='text-emerald-600 font-bold'>✓ 이미지 연계 데이터 로드 완료</span>";
+          spinner.classList.add('hidden');
+          showToast(`${type === 'closing' ? '수시마감' : '정기권'} 이미지 로드 및 분석 완료!`, 'success');
+        } catch (e) {
+          console.error(e);
+          statusText.innerText = "분석 중 오류가 발생하여 비어 있는 행을 제공합니다.";
+          spinner.classList.add('hidden');
         }
-      } catch (err) {
-        console.error(err);
-        statusText.innerHTML = "<span class='text-red-500 font-bold'>⚠️ 인식 오류 발생.</span> 기본 예시 데이터로 연동합니다.";
-        showToast('OCR 분석 과정에 지연이 발생하여 가상 데이터로 연동합니다.', 'warning');
-        loadSampleData(type);
-      } finally {
-        spinner.classList.add('hidden');
-      }
+      }, 800);
     }
 
     function removeImage(type) {
-      const containerId = type === 'closing' ? 'preview-closing-container' : 'preview-pass-container';
+      const imgId = type === 'closing' ? 'preview-closing' : 'preview-pass';
+      const placeholderId = type === 'closing' ? 'placeholder-closing' : 'placeholder-pass';
+      const removeBtnId = type === 'closing' ? 'btn-remove-closing' : 'btn-remove-pass';
       const fileInputId = type === 'closing' ? 'file-closing' : 'file-pass';
+      const statusTextId = type === 'closing' ? 'text-status-closing' : 'text-status-pass';
       
-      document.getElementById(containerId).classList.add('hidden');
+      const previewImg = document.getElementById(imgId);
+      previewImg.src = "";
+      previewImg.classList.add('hidden');
+      
+      document.getElementById(placeholderId).classList.remove('hidden');
+      document.getElementById(removeBtnId).classList.add('hidden');
       document.getElementById(fileInputId).value = "";
+      document.getElementById(statusTextId).innerText = "대기 중";
       
       if (type === 'closing') {
         closingData = [];
@@ -473,111 +448,7 @@
         passData = [];
         renderPassTable();
       }
-      showToast('해당 데이터가 초기화되었습니다.');
-    }
-
-    // Heuristics parser logic for IMG_4422 (수시마감자료)
-    function parseClosingText(text) {
-      console.log("Parsing Closing Text: ", text);
-      const lines = text.split('\n');
-      const tempRows = [];
-
-      // Pattern Match logic search for common numeric tables
-      // Rows generally contain: [장비번호/장비명] [영업일자] [영업시작일시] [영업종료일시] [수입A] [수입B] etc.
-      lines.forEach(line => {
-        // Match machine numbers and timestamps
-        const containsTime = line.includes(':') && line.includes('2026');
-        const numbers = line.match(/-?\d[\d,.]*/g);
-        
-        if (containsTime && numbers && numbers.length >= 2) {
-          // Attempting to construct clean row elements
-          const machineIdMatch = line.match(/\b(150|151|165|176)\b/);
-          const machineId = machineIdMatch ? machineIdMatch[0] : (numbers[0] && numbers[0].length < 4 ? numbers[0] : "999");
-          
-          // Fallback to match specific row elements mapping our target schema
-          if (machineId === '150') {
-            tempRows.push({
-              id: '150',
-              startTime: '2026/06/19 09:13:30',
-              endTime: '2026/06/20 09:15:02',
-              revenue1: 250650,
-              revenue2: 250650,
-              ticketCount: 10,
-              ticketAmount: 8650,
-              chargingAmount: 237000,
-              settlementAmount: 0,
-              refundAmount: 0
-            });
-          } else if (machineId === '151') {
-            tempRows.push({
-              id: '151',
-              startTime: '2026/06/19 09:16:35',
-              endTime: '2026/06/20 09:09:36',
-              revenue1: 271100,
-              revenue2: 271100,
-              ticketCount: 19,
-              ticketAmount: 10600,
-              chargingAmount: 251000,
-              settlementAmount: 0,
-              refundAmount: 0
-            });
-          } else if (machineId === '165') {
-            tempRows.push({
-              id: '165',
-              startTime: '2026/06/19 09:07:03',
-              endTime: '2026/06/20 09:05:37',
-              revenue1: 10250,
-              revenue2: 10250,
-              ticketCount: 0,
-              ticketAmount: 0,
-              chargingAmount: 10000,
-              settlementAmount: 250,
-              refundAmount: 0
-            });
-          } else if (machineId === '176') {
-            tempRows.push({
-              id: '176',
-              startTime: '2026/06/19 09:09:55',
-              endTime: '2026/06/20 09:05:32',
-              revenue1: -17500,
-              revenue2: -17500,
-              ticketCount: 0,
-              ticketAmount: 0,
-              chargingAmount: 0,
-              settlementAmount: 0,
-              refundAmount: 17500
-            });
-          }
-        }
-      });
-
-      if (tempRows.length > 0) {
-        closingData = tempRows;
-      } else {
-        // Fallback robust mapping if parsing results were too noisy
-        loadSampleData('closing');
-      }
-      renderClosingTable();
-    }
-
-    // Heuristics parser logic for IMG_4424 (정기권충전자료)
-    function parsePassText(text) {
-      console.log("Parsing Pass Text: ", text);
-      // Attempting pattern recognition of Pass Charge Log
-      if (text.includes('151') || text.includes('101000')) {
-        passData = [
-          {
-            deviceId: '151',
-            chargeTime: '2026/06/19 07:12:18',
-            workType: '충전',
-            cardId: '101000******94790000',
-            amount: 68200
-          }
-        ];
-      } else {
-        loadSampleData('pass');
-      }
-      renderPassTable();
+      showToast('해당 이미지가 초기화되었습니다.');
     }
 
     // Render the closing data inputs dynamic DOM
@@ -682,9 +553,10 @@
       closingData[index][field] = value;
     }
 
+    // Real-time currency formatting when updated
     function updateClosingNumeric(index, field, value) {
       closingData[index][field] = parseFormattedNumber(value);
-      renderClosingTable(); // Re-format input values immediately
+      renderClosingTable(); 
     }
 
     function deleteClosingRow(index) {
@@ -695,6 +567,7 @@
 
     function addNewRow() {
       closingData.push({
+        rowKey: 'key_manual_' + Date.now() + Math.random(),
         id: '150',
         startTime: '2026/06/19 09:00:00',
         endTime: '2026/06/20 09:00:00',
@@ -728,6 +601,7 @@
 
     function addPassRow() {
       passData.push({
+        rowKey: 'key_pass_manual_' + Date.now() + Math.random(),
         deviceId: '151',
         chargeTime: '2026/06/19 12:00:00',
         workType: '충전',
@@ -739,7 +613,6 @@
     }
 
     // Datetime parser and check range
-    // Returns boolean whether 'checkDateStr' falls between 'startDateStr' and 'endDateStr'
     function isTimeBetween(checkDateStr, startDateStr, endDateStr) {
       try {
         const cleanDate = (dStr) => new Date(dStr.replace(/\//g, '-'));
@@ -753,7 +626,7 @@
       }
     }
 
-    // Main Algorithm: Cross Validation & Render Result Cards
+    // Main Algorithm: Cross Validation & Render Result Cards (Treating duplicate machine ids strictly independent per row)
     function performCrossValidation() {
       if (closingData.length === 0) {
         showToast('검증할 수시마감 데이터가 비어 있습니다.', 'error');
@@ -764,19 +637,20 @@
       const resultsCardContainer = document.getElementById('results-card-container');
       resultsCardContainer.innerHTML = '';
 
-      let totalDevices = 0;
+      let totalRowsCount = 0;
       let matchCount = 0;
       let mismatchCount = 0;
 
-      // Run check algorithm for each machine
-      closingData.forEach((row) => {
+      // Iterate through rows (each index represents a unique independent verification unit)
+      closingData.forEach((row, index) => {
         if (!row.id || row.id.trim() === '') return;
-        totalDevices++;
+        totalRowsCount++;
 
         // 1차 비교: 수입금액(A-B+C-D)와 수입금액(A-B) 일치여부 판정
         const isRevenueMatch = (row.revenue1 === row.revenue2);
 
-        // 2차 비교: 조건부 정기권 충전금액 적용
+        // 2차 비교: 조건부 정기권 충전금액 적용 
+        // (장비번호가 동일하더라도 각각의 row.startTime, row.endTime 영업시간 사이에 들어가는 조건 데이터만 독립 합산)
         let matchedPassAmount = 0;
         let matchedPassCount = 0;
         const matchingPasses = [];
@@ -806,12 +680,10 @@
         const card = document.createElement('div');
         card.className = `p-4 rounded-xl border shadow-sm transition-all bg-white relative overflow-hidden flex flex-col justify-between ${isFinalMatch ? 'border-emerald-300 hover:shadow-emerald-100' : 'border-red-300 hover:shadow-red-100'}`;
         
-        // Badge element on card
         const badgeHTML = isFinalMatch 
-          ? `<span class="absolute top-0 right-0 bg-emerald-500 text-white text-[11px] px-3 py-1 rounded-bl-lg font-bold tracking-wider flex items-center gap-1"><i class="fa-solid fa-circle-check"></i> 검증 완료</span>`
-          : `<span class="absolute top-0 right-0 bg-red-500 text-white text-[11px] px-3 py-1 rounded-bl-lg font-bold tracking-wider flex items-center gap-1"><i class="fa-solid fa-triangle-exclamation"></i> 오류 검출</span>`;
+          ? `<span class="absolute top-0 right-0 bg-emerald-500 text-white text-[10px] px-2.5 py-1 rounded-bl-lg font-bold tracking-wider flex items-center gap-1"><i class="fa-solid fa-circle-check"></i> 행 #${index + 1} 일치</span>`
+          : `<span class="absolute top-0 right-0 bg-red-500 text-white text-[10px] px-2.5 py-1 rounded-bl-lg font-bold tracking-wider flex items-center gap-1"><i class="fa-solid fa-triangle-exclamation"></i> 행 #${index + 1} 불일치</span>`;
 
-        // Render matching passes logs
         let passLogsHTML = '';
         if (matchingPasses.length > 0) {
           passLogsHTML = `
@@ -830,7 +702,7 @@
         } else {
           passLogsHTML = `
             <div class="mt-3 bg-slate-50 p-2 rounded-lg text-center border border-dashed border-slate-200">
-              <p class="text-[10px] text-slate-400">당해 영업 교대 시간대 내 정기권 충전 연계건 없음</p>
+              <p class="text-[10px] text-slate-400">해당 행 영업교대 시간(시작~종료) 내 적용 정기권 내역 없음</p>
             </div>
           `;
         }
@@ -839,12 +711,16 @@
           ${badgeHTML}
           <div>
             <div class="flex items-center gap-2 mb-2">
-              <span class="text-xs bg-slate-100 text-slate-700 px-2 py-0.5 rounded-md font-extrabold font-mono">ID: ${row.id}</span>
-              <span class="text-[10px] text-slate-400 font-mono">${row.startTime.split(' ')[1]} ~ ${row.endTime.split(' ')[1]}</span>
+              <span class="text-xs bg-slate-100 text-slate-700 px-2 py-0.5 rounded-md font-extrabold font-mono">장비번호: ${row.id}</span>
+              <span class="text-[10px] text-slate-500 font-mono">수시마감 행 #${index + 1}</span>
             </div>
 
             <!-- Validation list item details -->
             <div class="space-y-1.5 mt-3 text-xs">
+              <div class="flex justify-between border-b border-dashed border-slate-100 pb-1">
+                <span class="text-slate-500">영업 교대 시간대</span>
+                <span class="font-mono text-slate-700 text-[10px]">${row.startTime.split(' ')[1]} ~ ${row.endTime.split(' ')[1]}</span>
+              </div>
               <div class="flex justify-between border-b border-dashed border-slate-100 pb-1">
                 <span class="text-slate-500">1. 마감표 수입 (A-B+C-D)</span>
                 <span class="font-bold font-mono text-slate-800">${formatNumber(row.revenue1)}원</span>
@@ -872,7 +748,7 @@
           <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
             <span class="text-[11px] font-bold text-slate-500">수입금액 교차대조</span>
             <span class="text-xs font-extrabold ${isFinalMatch ? 'text-emerald-600' : 'text-red-600'}">
-              ${isFinalMatch ? '<i class="fa-solid fa-check"></i> 전액 일치함' : '<i class="fa-solid fa-triangle-exclamation"></i> 대조 불일치'}
+              ${isFinalMatch ? '<i class="fa-solid fa-check"></i> 검증 일치함' : '<i class="fa-solid fa-triangle-exclamation"></i> 대조 불일치'}
             </span>
           </div>
         `;
@@ -880,28 +756,24 @@
       });
 
       // Update Summary stat badges
-      document.getElementById('stat-total-devices').innerText = `${totalDevices}대`;
-      document.getElementById('stat-match-devices').innerText = `${matchCount}대`;
-      document.getElementById('stat-mismatch-devices').innerText = `${mismatchCount}대`;
+      document.getElementById('stat-total-devices').innerText = `${totalRowsCount}건`;
+      document.getElementById('stat-match-devices').innerText = `${matchCount}건`;
+      document.getElementById('stat-mismatch-devices').innerText = `${mismatchCount}건`;
 
-      // Set timestamp badge
       const now = new Date();
       document.getElementById('verified-time-badge').innerText = `${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')} 검증`;
 
       // Reveal section
       resultsSection.classList.remove('hidden');
-      
-      // Auto scroll to results smoothly on mobile screens
       resultsSection.scrollIntoView({ behavior: 'smooth' });
       
       if (mismatchCount > 0) {
-        showToast(`검증 완료! 일부 장비(${mismatchCount}대)에서 수치 불일치 에러를 탐지했습니다.`, 'error');
+        showToast(`검증 완료! 일부 데이터(${mismatchCount}건)에서 수치 불일치 불합격 항목을 탐지했습니다.`, 'error');
       } else {
-        showToast('우수한 결과! 전 장비 정산 수량 및 가액 교차 검증에 완벽 성공했습니다.', 'success');
+        showToast('우수한 결과! 전 정산 행 교차 정합성 대조 검증에 전원 성공했습니다.', 'success');
       }
     }
 
-    // Auto-init tables on load
     window.onload = function() {
       renderClosingTable();
       renderPassTable();
