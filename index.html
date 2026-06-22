@@ -218,36 +218,39 @@
         <h3 class="text-base font-bold text-slate-800 flex items-center gap-1.5">
           <i class="fa-solid fa-square-poll-vertical text-indigo-600"></i> 실시간 대조 및 검증 결과
         </h3>
-        <span class="text-xs bg-indigo-100 text-indigo-800 font-bold px-2 py-0.5 rounded" id="verified-time-badge">오후 3:15 검증</span>
+        <span class="text-xs bg-indigo-100 text-indigo-800 font-bold px-2 py-0.5 rounded" id="verified-time-badge">오전 00:00 검증</span>
       </div>
 
-      <!-- Quick Summary Metric Cards -->
-      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <div class="bg-white p-3.5 rounded-lg border border-slate-200 shadow-sm flex items-center gap-3">
-          <div class="p-2.5 bg-blue-50 rounded-lg text-blue-600">
-            <i class="fa-solid fa-calculator text-lg"></i>
+      <!-- Quick Summary Metric Cards (Single Row Layout) -->
+      <div class="grid grid-cols-3 gap-2">
+        <!-- 대상 건수 카드 -->
+        <div class="bg-white p-2 sm:p-3 rounded-lg border border-slate-200 shadow-sm flex items-center justify-center gap-1.5 sm:gap-3">
+          <div class="p-1.5 sm:p-2 bg-blue-50 rounded-lg text-blue-600">
+            <i class="fa-solid fa-calculator text-sm sm:text-base"></i>
           </div>
-          <div>
-            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">총 검증 대상 행</p>
-            <p class="text-base font-extrabold text-slate-800" id="stat-total-devices">0건</p>
-          </div>
-        </div>
-        <div class="bg-white p-3.5 rounded-lg border border-slate-200 shadow-sm flex items-center gap-3">
-          <div class="p-2.5 bg-emerald-50 rounded-lg text-emerald-600">
-            <i class="fa-solid fa-circle-check text-lg"></i>
-          </div>
-          <div>
-            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">정상 일치 건수</p>
-            <p class="text-base font-extrabold text-emerald-600" id="stat-match-devices">0건</p>
+          <div class="text-left leading-tight">
+            <span class="text-[10px] sm:text-xs font-bold text-slate-500">대상: </span>
+            <span class="text-xs sm:text-sm font-extrabold text-slate-800" id="stat-total-devices">0건</span>
           </div>
         </div>
-        <div class="bg-white p-3.5 rounded-lg border border-slate-200 shadow-sm flex items-center gap-3">
-          <div class="p-2.5 bg-red-50 rounded-lg text-red-600">
-            <i class="fa-solid fa-triangle-exclamation text-lg"></i>
+        <!-- 일치 건수 카드 -->
+        <div class="bg-white p-2 sm:p-3 rounded-lg border border-slate-200 shadow-sm flex items-center justify-center gap-1.5 sm:gap-3">
+          <div class="p-1.5 sm:p-2 bg-emerald-50 rounded-lg text-emerald-600">
+            <i class="fa-solid fa-circle-check text-sm sm:text-base"></i>
           </div>
-          <div>
-            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">수치 불일치 건수</p>
-            <p class="text-base font-extrabold text-red-600" id="stat-mismatch-devices">0건</p>
+          <div class="text-left leading-tight">
+            <span class="text-[10px] sm:text-xs font-bold text-slate-500">일치: </span>
+            <span class="text-xs sm:text-sm font-extrabold text-emerald-600" id="stat-match-devices">0건</span>
+          </div>
+        </div>
+        <!-- 불일치 건수 카드 -->
+        <div class="bg-white p-2 sm:p-3 rounded-lg border border-slate-200 shadow-sm flex items-center justify-center gap-1.5 sm:gap-3">
+          <div class="p-1.5 sm:p-2 bg-red-50 rounded-lg text-red-600">
+            <i class="fa-solid fa-triangle-exclamation text-sm sm:text-base"></i>
+          </div>
+          <div class="text-left leading-tight">
+            <span class="text-[10px] sm:text-xs font-bold text-slate-500">불일치: </span>
+            <span class="text-xs sm:text-sm font-extrabold text-red-600" id="stat-mismatch-devices">0건</span>
           </div>
         </div>
       </div>
@@ -588,6 +591,7 @@
       passData[index][field] = value;
     }
 
+    // Real-time updates for Pass Amounts
     function updatePassNumeric(index, field, value) {
       passData[index][field] = parseFormattedNumber(value);
       renderPassTable();
