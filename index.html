@@ -40,6 +40,7 @@
           <p class="text-xs text-blue-200">역단위 감시 시스템(SMS) 연계</p>
         </div>
       </div>
+      <span class="bg-blue-600 text-xs px-2.5 py-1 rounded-full font-semibold border border-blue-400">Mobile Ver 1.4</span>
     </div>
   </header>
 
@@ -129,18 +130,20 @@
         <h3 class="font-bold text-sm flex items-center gap-1.5">
           <i class="fa-solid fa-database text-blue-400"></i> 인식 및 수동 보정 테이블
         </h3>
-        <button onclick="addNewRow()" class="text-xs bg-blue-600 hover:bg-blue-700 text-white py-1 px-2.5 rounded font-medium transition flex items-center gap-1">
-          <i class="fa-solid fa-plus"></i> 수시마감 행 추가
-        </button>
       </div>
 
       <div class="p-4 space-y-6">
         
         <!-- 1. 수시마감자료 테이블 -->
         <div>
-          <h4 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 flex justify-between items-center">
-            <span>[1] 수시마감 데이터 상세데이터</span>
-          </h4>
+          <div class="flex justify-between items-center mb-2">
+            <h4 class="text-xs font-bold text-slate-500 uppercase tracking-wider">
+              <span>[1] 수시마감 데이터 상세데이터</span>
+            </h4>
+            <button onclick="addNewRow()" class="text-[11px] bg-blue-600 hover:bg-blue-700 text-white py-1 px-2 rounded font-medium transition flex items-center gap-1">
+              <i class="fa-solid fa-plus"></i> 수시마감 행 추가
+            </button>
+          </div>
           <div class="overflow-x-auto rounded-lg border border-slate-200">
             <table class="w-full text-left border-collapse min-w-[1000px]">
               <thead>
@@ -567,24 +570,6 @@
       showToast('행이 삭제되었습니다.');
     }
 
-    function addNewRow() {
-      closingData.push({
-        rowKey: 'key_manual_' + Date.now() + Math.random(),
-        id: '150',
-        startTime: '2026/06/19 09:00:00',
-        endTime: '2026/06/20 09:00:00',
-        revenue1: 0,
-        revenue2: 0,
-        ticketCount: 0,
-        ticketAmount: 0,
-        chargingAmount: 0,
-        settlementAmount: 0,
-        refundAmount: 0
-      });
-      renderClosingTable();
-      showToast('수시마감 신규 장비 대조 행이 추가되었습니다.');
-    }
-
     // Action Helpers for Pass Table
     function updatePassField(index, field, value) {
       passData[index][field] = value;
@@ -600,19 +585,6 @@
       passData.splice(index, 1);
       renderPassTable();
       showToast('정기권 행이 삭제되었습니다.');
-    }
-
-    function addPassRow() {
-      passData.push({
-        rowKey: 'key_pass_manual_' + Date.now() + Math.random(),
-        deviceId: '151',
-        chargeTime: '2026/06/19 12:00:00',
-        workType: '충전',
-        cardId: '101000******00000000',
-        amount: 50000
-      });
-      renderPassTable();
-      showToast('정기권 충전내역 기록이 신규 추가되었습니다.');
     }
 
     // Datetime parser and check range
