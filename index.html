@@ -8,8 +8,6 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- FontAwesome Icons for Beautiful UI -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <!-- Tesseract.js for OCR Processing -->
-  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
   <style>
     /* Custom Scrollbar */
     ::-webkit-scrollbar {
@@ -40,7 +38,7 @@
           <p class="text-xs text-blue-200">역단위 감시 시스템(SMS) 연계</p>
         </div>
       </div>
-      <span class="bg-emerald-600 text-xs px-2.5 py-1 rounded-full font-semibold border border-emerald-400">Pure OCR Ver 2.0</span>
+      <span class="bg-blue-600 text-xs px-2.5 py-1 rounded-full font-semibold border border-blue-400">Gemini Vision AI OCR v2.5</span>
     </div>
   </header>
 
@@ -280,9 +278,8 @@
     let closingData = [];
     let passData = [];
     
-    // 글로벌 싱글톤 Tesseract 워커 및 로딩 상태 관리자 (속도 향상의 핵심 비결)
-    let globalOcrWorker = null;
-    let isWorkerInitializing = false;
+    // Gemini API Configurations (Canvas runtime automatically injects API key)
+    const apiKey = ""; 
 
     // 포맷 함수들
     function formatNumber(num) {
@@ -321,8 +318,22 @@
       }, 4000);
     }
 
-    // [핵심 최적화 전처리] 고성능 흑백 대비 이진화(Contrast Binarization) 알고리즘
-    // Tesseract의 노이즈 제거와 글자 세그멘테이션 속도를 비약적으로 단축시킵니다.
+    // Exponential Backoff Fetch API implementation (Gemini API Guide Rule)
+    async function fetchWithRetry(url, options, retries = 5, delay = 1000) {
+      try {
+        const response = await fetch(url, options);
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        return await response.json();
+      } catch (error) {
+        if (retries > 0) {
+          await new Promise(resolve => setTimeout(resolve, delay));
+          return fetchWithRetry(url, options, retries - 1, delay * 2);
+        }
+        throw error;
+      }
+    }
+
+    // High performance image resizer
     function preprocessImage(file) {
       return new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -332,8 +343,7 @@
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
             
-            // 처리 가속을 위한 해상도 다운사이징 (가로 최대 1000px로 조율하여 픽셀 부하 최소화)
-            const MAX_WIDTH = 1000;
+            const MAX_WIDTH = 1200;
             let width = img.width;
             let height = img.height;
             
@@ -345,29 +355,7 @@
             canvas.width = width;
             canvas.height = height;
             ctx.drawImage(img, 0, 0, width, height);
-            
-            // 이미지 이진화 처리 (Pure 1-Bit 흑백 이미지화)
-            const imgData = ctx.getImageData(0, 0, width, height);
-            const data = imgData.data;
-            for (let i = 0; i < data.length; i += 4) {
-              const r = data[i];
-              const g = data[i + 1];
-              const b = data[i + 2];
-              
-              // 회색조 산출 공식 적용
-              const gray = 0.299 * r + 0.587 * g + 0.114 * b;
-              
-              // 임계값 120 기준으로 흰색(255) 혹은 검은색(0) 이진화
-              const binary = gray > 120 ? 255 : 0;
-              
-              data[i] = binary;     
-              data[i + 1] = binary; 
-              data[i + 2] = binary; 
-            }
-            ctx.putImageData(imgData, 0, 0);
-            
-            // 압축 성능 극대화를 위한 JPEG 포맷 변환
-            resolve(canvas.toDataURL('image/jpeg', 0.8));
+            resolve(canvas.toDataURL('image/jpeg', 0.85));
           };
           img.onerror = () => reject(new Error('이미지 로드 실패'));
           img.src = event.target.result;
@@ -377,158 +365,92 @@
       });
     }
 
-    // 글로벌 OCR 싱글톤 인스턴스 반환 함수
-    async function getSharedOcrWorker(statusCallback) {
-      if (globalOcrWorker) {
-        return globalOcrWorker;
-      }
-      
-      if (isWorkerInitializing) {
-        // 이미 기동 중인 워커가 있다면 대기
-        while (isWorkerInitializing) {
-          await new Promise(r => setTimeout(r, 200));
-        }
-        return globalOcrWorker;
-      }
+    // [핵심 OCR 가속 비법] 구글의 최첨단 Gemini 2.5 Flash Vision API 연계 데이터 정밀 추출기
+    async function performOcrWithGeminiVision(base64Data, type) {
+      const model = "gemini-2.5-flash-preview-09-2025";
+      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
-      isWorkerInitializing = true;
-      if (statusCallback) statusCallback("최초 1회 판독 엔진 로드 중...");
+      let promptText = "";
+      let responseSchema = {};
 
-      try {
-        const worker = await Tesseract.createWorker({
-          logger: m => {
-            if (m.status === 'recognizing text' && statusCallback) {
-              statusCallback(`판독 진행률: <b class="text-blue-600 font-mono">${Math.round(m.progress * 100)}%</b>`);
-            }
+      if (type === "closing") {
+        promptText = `지하철 역사 정산 시스템의 수시마감 보고서 이미지입니다. 표에 나타나 있는 '장비번호'별 정산 상세 필드를 정확히 판독하여 JSON 형식으로만 응답해주세요. 수입금액 항목(A-B+C-D, A-B 등)과 발매건수, 발매금액, 충전금액, 정산금액, 환급금액이 정확히 행별로 일치하게 매핑되어야 합니다.`;
+        responseSchema = {
+          type: "ARRAY",
+          items: {
+            type: "OBJECT",
+            properties: {
+              id: { type: "STRING", description: "장비번호 (예: 150, 151, 165)" },
+              startTime: { type: "STRING", description: "영업시작일시 (YYYY/MM/DD HH:MM:SS 형식)" },
+              endTime: { type: "STRING", description: "영업종료일시 (YYYY/MM/DD HH:MM:SS 형식)" },
+              revenue1: { type: "INTEGER", description: "수입금액(A-B+C-D)" },
+              revenue2: { type: "INTEGER", description: "수입금액(A-B)" },
+              ticketCount: { type: "INTEGER", description: "발매건수" },
+              ticketAmount: { type: "INTEGER", description: "발매금액" },
+              chargingAmount: { type: "INTEGER", description: "충전금액" },
+              settlementAmount: { type: "INTEGER", description: "정산금액" },
+              refundAmount: { type: "INTEGER", description: "환급금액" }
+            },
+            required: ["id", "startTime", "endTime", "revenue1", "revenue2"]
           }
-        });
-
-        await worker.loadLanguage('ko+eng');
-        await worker.initialize('ko+eng');
-        globalOcrWorker = worker;
-      } catch (err) {
-        console.error("워커 초기화 실패:", err);
-      } finally {
-        isWorkerInitializing = false;
+        };
+      } else {
+        promptText = `정기권 충전내역 상세 조회 테이블 이미지입니다. 표 안의 모든 거래 행들을 JSON으로 추출해 주세요. 장비번호, 충전일시, 작업구분(충전), 카드 ID(101000******94790000 와 같은 마스킹 형태 포함), 충전금액 정보를 정확히 구조화해 주세요.`;
+        responseSchema = {
+          type: "ARRAY",
+          items: {
+            type: "OBJECT",
+            properties: {
+              deviceId: { type: "STRING", description: "장비번호" },
+              chargeTime: { type: "STRING", description: "충전일시 (YYYY/MM/DD HH:MM:SS 형식)" },
+              workType: { type: "STRING", description: "작업구분 (예: 충전)" },
+              cardId: { type: "STRING", description: "카드 ID" },
+              amount: { type: "INTEGER", description: "충전금액" }
+            },
+            required: ["deviceId", "chargeTime", "amount"]
+          }
+        };
       }
 
-      return globalOcrWorker;
-    }
+      // Base64 Prefix strip
+      const cleanBase64 = base64Data.split(',')[1];
 
-    // 정교한 수시마감 데이터 파서
-    function parseClosingOCRText(text) {
-      const lines = text.split('\n');
-      const results = [];
-      
-      lines.forEach(line => {
-        const dateTimeRegex = /\d{4}[\/\-]\d{2}[\/\-]\d{2}\s+\d{2}:\d{2}:\d{2}/g;
-        const dateTimes = line.match(dateTimeRegex) || [];
-        if (dateTimes.length < 2) return;
-
-        const cleanText = line.replace(/,/g, '');
-        const rawNumbers = cleanText.match(/\-?\b\d+\b/g) || [];
-        const nonDateNumbers = rawNumbers.filter(num => !dateTimes.some(dt => dt.includes(num))).map(Number);
-
-        if (nonDateNumbers.length >= 8) {
-          let deviceId = "";
-          const devIndex = nonDateNumbers.findIndex(n => n >= 100 && n <= 999);
-          if (devIndex !== -1) {
-            deviceId = String(nonDateNumbers[devIndex]);
-          } else {
-            deviceId = String(nonDateNumbers[1] || nonDateNumbers[0]);
-          }
-
-          const filteredNums = nonDateNumbers.filter(n => String(n).length !== 8 || !String(n).startsWith('20'));
-          
-          let rev1 = 0;
-          let rev2 = 0;
-          let ticketCount = 0;
-          let ticketAmount = 0;
-          let chargingAmount = 0;
-          let settlementAmount = 0;
-          let refundAmount = 0;
-
-          for (let i = 2; i < filteredNums.length - 5; i++) {
-            for (let j = i + 2; j < filteredNums.length - 2; j++) {
-              if (filteredNums[i] === filteredNums[j] && Math.abs(filteredNums[i]) > 1000) {
-                rev1 = filteredNums[i];
-                rev2 = filteredNums[j];
-                ticketCount = filteredNums[j + 1] || 0;
-                ticketAmount = filteredNums[j + 2] || 0;
-                chargingAmount = filteredNums[j + 4] || 0;
-                settlementAmount = filteredNums[j + 6] || 0;
-                refundAmount = filteredNums[j + 8] || 0;
-                break;
+      const payload = {
+        contents: [{
+          role: "user",
+          parts: [
+            { text: promptText },
+            {
+              inlineData: {
+                mimeType: "image/jpeg",
+                data: cleanBase64
               }
             }
-            if (rev1 !== 0) break;
-          }
-
-          if (rev1 === 0) {
-            rev1 = filteredNums[7] || 0;
-            rev2 = filteredNums[12] || rev1;
-            ticketCount = filteredNums[13] || 0;
-            ticketAmount = filteredNums[14] || 0;
-            chargingAmount = filteredNums[16] || 0;
-            settlementAmount = filteredNums[18] || 0;
-            refundAmount = filteredNums[20] || 0;
-          }
-
-          results.push({
-            rowKey: 'key_ocr_' + Math.random(),
-            id: deviceId,
-            startTime: dateTimes[0],
-            endTime: dateTimes[1],
-            revenue1: rev1,
-            revenue2: rev2,
-            ticketCount: ticketCount,
-            ticketAmount: ticketAmount,
-            chargingAmount: chargingAmount,
-            settlementAmount: settlementAmount,
-            refundAmount: refundAmount
-          });
+          ]
+        }],
+        generationConfig: {
+          responseMimeType: "application/json",
+          responseSchema: responseSchema
         }
-      });
+      };
+
+      const options = {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      };
+
+      const responseData = await fetchWithRetry(endpoint, options);
+      const extractedText = responseData.candidates?.[0]?.content?.parts?.[0]?.text;
       
-      return results;
+      if (!extractedText) {
+        throw new Error("API 응답에서 추출된 텍스트가 비어 있습니다.");
+      }
+
+      return JSON.parse(extractedText);
     }
 
-    // 정교한 정기권 데이터 파서
-    function parsePassOCRText(text) {
-      const lines = text.split('\n');
-      const results = [];
-
-      lines.forEach(line => {
-        const dateTimeRegex = /\d{4}[\/\-]\d{2}[\/\-]\d{2}\s+\d{2}:\d{2}:\d{2}/g;
-        const matchTime = line.match(dateTimeRegex);
-        if (!matchTime) return;
-
-        const cleanText = line.replace(/,/g, '');
-        const rawNumbers = cleanText.match(/\d+/g) || [];
-        
-        const cardMatch = line.match(/\b101000[0-9\*]+\b/) || line.match(/[0-9\*]{12,}/);
-        const cardId = cardMatch ? cardMatch[0] : "101000******94790000";
-
-        const deviceIdMatch = rawNumbers.find(n => n.length === 3 && (n.startsWith('1') || n.startsWith('2')));
-        const deviceId = deviceIdMatch ? deviceIdMatch : "151";
-
-        const nonDateNumbers = rawNumbers.filter(n => n !== deviceId && !matchTime[0].includes(n) && !cardId.includes(n));
-        const amountCandidate = nonDateNumbers.find(n => parseInt(n) >= 1000 && parseInt(n) % 100 === 0) || "68200";
-
-        results.push({
-          rowKey: 'key_pass_ocr_' + Math.random(),
-          deviceId: deviceId,
-          chargeTime: matchTime[0],
-          workType: "충전",
-          cardId: cardId,
-          amount: parseInt(amountCandidate)
-        });
-      });
-
-      return results;
-    }
-
-    // 실제 업로드 파일 처리 컨트롤러 (자동 폴백 배제 및 실제 OCR 데이터 로드 보장)
+    // 실제 업로드 파일 처리 컨트롤러 (Gemini API 기반으로 가속)
     async function handleImageUpload(event, type) {
       const file = event.target.files[0];
       if (!file) return;
@@ -545,7 +467,7 @@
 
       // UI 진행 상태 갱신
       spinner.classList.remove('hidden');
-      statusText.innerHTML = `<i class="fa-solid fa-bolt text-amber-500"></i> 고속 이진화 최적화 압축 중...`;
+      statusText.innerHTML = `<i class="fa-solid fa-bolt text-amber-500"></i> 모바일 이미지 전처리 압축 중...`;
 
       try {
         // 전처리 수행
@@ -556,49 +478,40 @@
         document.getElementById(placeholderId).classList.add('hidden');
         document.getElementById(removeBtnId).classList.remove('hidden');
 
-        // 공유 OCR 워커 가동
-        const worker = await getSharedOcrWorker((msg) => {
-          statusText.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin text-blue-500"></i> ${msg}`;
-        });
+        statusText.innerHTML = `<i class="fa-solid fa-brain text-indigo-500 animate-pulse"></i> Gemini 인공지능 분석기로 정밀 OCR 분석 중 (1~2초)...`;
 
-        if (!worker) {
-          throw new Error("OCR 인스턴스 연결 실패");
-        }
-
-        const ret = await worker.recognize(optimizedImgUrl);
-        const text = ret.data.text;
+        // Gemini Vision API 호출
+        const parsedData = await performOcrWithGeminiVision(optimizedImgUrl, type);
 
         if (type === 'closing') {
-          const parsedClosing = parseClosingOCRText(text);
-          if (parsedClosing.length > 0) {
-            closingData = parsedClosing;
+          if (parsedData && parsedData.length > 0) {
+            closingData = parsedData.map(row => ({
+              rowKey: 'key_ocr_' + Math.random(),
+              ...row
+            }));
             renderClosingTable();
-            statusText.innerHTML = `<span class='text-emerald-600 font-bold'>✓ 100% 실시간 판독 동기화 완료</span> (장비 ${parsedClosing.length}대)`;
-            showToast(`이미지 분석이 완벽히 정합되었습니다!`, 'success');
+            statusText.innerHTML = `<span class='text-emerald-600 font-bold'>✓ 인공지능 분석 완료</span> (장비 ${parsedData.length}대 추출)`;
+            showToast(`이미지 내 ${parsedData.length}개의 수시마감 데이터를 정상 추출했습니다.`, 'success');
           } else {
-            closingData = [];
-            renderClosingTable();
-            statusText.innerHTML = "<span class='text-red-500 font-bold'>⚠️ 인식된 정산 정보 없음</span> (수동 기입 가능)";
-            showToast('장표의 정산 텍스트를 인지하지 못했습니다. 테이블에 직접 행을 추가해 주세요.', 'warning');
+            throw new Error("인식된 데이터 행이 없습니다.");
           }
         } else {
-          const parsedPass = parsePassOCRText(text);
-          if (parsedPass.length > 0) {
-            passData = parsedPass;
+          if (parsedData && parsedData.length > 0) {
+            passData = parsedData.map(row => ({
+              rowKey: 'key_pass_ocr_' + Math.random(),
+              ...row
+            }));
             renderPassTable();
-            statusText.innerHTML = `<span class='text-emerald-600 font-bold'>✓ 100% 실시간 판독 동기화 완료</span> (정기권 ${parsedPass.length}건)`;
-            showToast(`정기권 충전내역이 안정적으로 동기화되었습니다!`, 'success');
+            statusText.innerHTML = `<span class='text-emerald-600 font-bold'>✓ 인공지능 분석 완료</span> (정기권 ${parsedData.length}건 추출)`;
+            showToast(`정기권 거래내역 ${parsedData.length}건을 성공적으로 추출했습니다.`, 'success');
           } else {
-            passData = [];
-            renderPassTable();
-            statusText.innerHTML = "<span class='text-red-500 font-bold'>⚠️ 인식된 거래 정보 없음</span>";
-            showToast('정기권 거래 정보를 추출하지 못했습니다. 수동으로 채우거나 다시 촬영해 주세요.', 'warning');
+            throw new Error("인식된 데이터 행이 없습니다.");
           }
         }
       } catch (e) {
-        console.error("고속 OCR 구동 에러:", e);
-        statusText.innerHTML = "<span class='text-red-600 font-bold'>⚠️ 판독 실패</span> (수동 테이블 편집 지원)";
-        showToast('보안 정책 또는 기기 사양으로 인해 판독이 차단되었습니다.', 'error');
+        console.error("인공지능 분석 실패:", e);
+        statusText.innerHTML = "<span class='text-red-600 font-bold'>⚠️ 인공지능 분석 실패</span> (데이터가 올바른 장표인지 확인하세요)";
+        showToast('정밀 OCR 분석에 실패했습니다. 올바른 영수증 장표 사진인지 확인해주세요.', 'error');
       } finally {
         spinner.classList.add('hidden');
       }
@@ -954,12 +867,9 @@
       }
     }
 
-    // 워커를 미리 기동해 첫 이미지 인식 속도를 절약합니다.
     window.onload = function() {
       renderClosingTable();
       renderPassTable();
-      // 백그라운드 지연 기동으로 초기 화면 로딩 부하 제거
-      setTimeout(() => { getSharedOcrWorker(); }, 1000);
     };
   </script>
 </body>
