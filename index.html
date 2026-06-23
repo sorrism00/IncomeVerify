@@ -38,12 +38,36 @@
           <p class="text-xs text-blue-200">역단위 감시 시스템(SMS) 연계</p>
         </div>
       </div>
-      <span class="bg-blue-600 text-xs px-2.5 py-1 rounded-full font-semibold border border-blue-400">Gemini Vision AI OCR v2.5</span>
+      <div class="flex items-center space-x-2">
+        <!-- API Key Setting Button -->
+        <button onclick="toggleApiKeyModal(true)" class="bg-blue-600 hover:bg-blue-500 text-white p-2 rounded-lg transition duration-200 flex items-center justify-center" title="API Key 설정">
+          <i class="fa-solid fa-gear text-sm"></i>
+        </button>
+        <span class="bg-blue-600 text-[10px] sm:text-xs px-2.5 py-1 rounded-full font-semibold border border-blue-400">Gemini Vision AI OCR v2.6</span>
+      </div>
     </div>
   </header>
 
   <!-- Main Content Container -->
   <main class="flex-grow max-w-4xl w-full mx-auto px-4 py-6 space-y-6">
+
+    <!-- API Key 안내 배너 (Key가 없을 때만 표시됨) -->
+    <div id="apikey-warning-banner" class="hidden bg-amber-50 border-l-4 border-amber-500 p-4 rounded-r-lg shadow-sm">
+      <div class="flex justify-between items-start">
+        <div class="flex">
+          <div class="flex-shrink-0">
+            <i class="fa-solid fa-key text-amber-500 mt-0.5"></i>
+          </div>
+          <div class="ml-3">
+            <h3 class="text-sm font-semibold text-amber-800">구글 AI API Key 등록 필요</h3>
+            <p class="text-xs text-amber-700 mt-1 leading-relaxed">
+              실제 이미지 분석(OCR) 기능을 외부 개별 환경에서 정상적으로 사용하려면 우측 상단의 <strong>톱니바퀴(설정)</strong> 버튼을 눌러 본인의 Gemini API Key를 등록해 주세요.
+            </p>
+          </div>
+        </div>
+        <button onclick="toggleApiKeyModal(true)" class="text-xs bg-amber-600 hover:bg-amber-700 text-white px-2.5 py-1 rounded font-bold transition">키 등록하기</button>
+      </div>
+    </div>
 
     <!-- Step 1: Image Upload and OCR Section -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -267,6 +291,37 @@
 
   </main>
 
+  <!-- API Key Setting Modal Popup -->
+  <div id="apikey-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl border border-slate-100 overflow-hidden transform transition-all">
+      <div class="bg-slate-900 text-white px-5 py-4 flex justify-between items-center">
+        <h3 class="font-bold text-sm flex items-center gap-1.5">
+          <i class="fa-solid fa-key text-blue-400"></i> Gemini API Key 설정
+        </h3>
+        <button onclick="toggleApiKeyModal(false)" class="text-slate-400 hover:text-white transition">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <div class="p-5 space-y-4">
+        <p class="text-xs text-slate-500 leading-relaxed">
+          이 웹앱은 정밀 실시간 OCR 판독을 위해 구글 인공지능(Gemini 2.5 Flash)을 사용합니다. 본인의 구글 AI 스튜디오 API Key를 등록하여 안전하게 영구 사용하세요.
+        </p>
+        <div>
+          <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">API Key 입력</label>
+          <input type="password" id="apikey-input" placeholder="AIzaSy..." class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-xs font-mono tracking-widest focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition">
+        </div>
+        <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-100 text-[10px] text-slate-500 flex items-start gap-1.5">
+          <i class="fa-solid fa-circle-info text-blue-500 mt-0.5"></i>
+          <span>입력된 API Key는 브라우저 내부 캐시(localStorage)에만 안전하게 기기 독립 보관되며, 그 외 외부로 절대 전송되지 않습니다.</span>
+        </div>
+        <div class="flex gap-2 pt-2">
+          <button onclick="toggleApiKeyModal(false)" class="flex-1 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold transition">닫기</button>
+          <button onclick="saveApiKey()" class="flex-1 py-2 bg-blue-700 hover:bg-blue-800 text-white rounded-lg text-xs font-semibold transition">저장 및 활성화</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Global Toast Message -->
   <div id="toast-message" class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-xs px-4 py-3 rounded-xl shadow-2xl flex items-center gap-2 opacity-0 pointer-events-none transition-all duration-300 z-50">
     <i class="fa-solid fa-info-circle text-blue-400" id="toast-icon"></i>
@@ -278,8 +333,8 @@
     let closingData = [];
     let passData = [];
     
-    // Gemini API Configurations (Canvas runtime automatically injects API key)
-    const apiKey = ""; 
+    // 로컬 스토리지에 저장된 키가 있는 지 로드
+    let savedApiKey = localStorage.getItem('gemini_validator_api_key') || "";
 
     // 포맷 함수들
     function formatNumber(num) {
@@ -291,38 +346,46 @@
       return parseInt(String(val).replace(/,/g, '')) || 0;
     }
 
-    // 커스텀 토스트 알림 메커니즘
-    function showToast(message, type = 'info') {
-      const toast = document.getElementById('toast-message');
-      const toastText = document.getElementById('toast-text');
-      const toastIcon = document.getElementById('toast-icon');
-      
-      toastText.innerText = message;
-      
-      if (type === 'success') {
-        toastIcon.className = "fa-solid fa-circle-check text-emerald-400";
-      } else if (type === 'error') {
-        toastIcon.className = "fa-solid fa-circle-exclamation text-red-400";
-      } else if (type === 'warning') {
-        toastIcon.className = "fa-solid fa-triangle-exclamation text-amber-400";
+    // API Key 모달 제어
+    function toggleApiKeyModal(show) {
+      const modal = document.getElementById('apikey-modal');
+      const input = document.getElementById('apikey-input');
+      if (show) {
+        input.value = savedApiKey;
+        modal.classList.remove('hidden');
       } else {
-        toastIcon.className = "fa-solid fa-circle-info text-blue-400";
+        modal.classList.add('hidden');
       }
+    }
 
-      toast.classList.remove('opacity-0', 'pointer-events-none');
-      toast.classList.add('opacity-100');
-      
-      setTimeout(() => {
-        toast.classList.remove('opacity-100');
-        toast.classList.add('opacity-0', 'pointer-events-none');
-      }, 4000);
+    // API Key 저장 및 활성화
+    function saveApiKey() {
+      const inputVal = document.getElementById('apikey-input').value.trim();
+      savedApiKey = inputVal;
+      localStorage.setItem('gemini_validator_api_key', inputVal);
+      toggleApiKeyModal(false);
+      checkApiKeyPresence();
+      showToast('API Key 설정이 안전하게 기기에 저장 및 활성화되었습니다.', 'success');
+    }
+
+    // API Key 부재 여부에 따라 경고 배너 켜고 끄기
+    function checkApiKeyPresence() {
+      const banner = document.getElementById('apikey-warning-banner');
+      if (!savedApiKey) {
+        banner.classList.remove('hidden');
+      } else {
+        banner.classList.add('hidden');
+      }
     }
 
     // Exponential Backoff Fetch API implementation (Gemini API Guide Rule)
     async function fetchWithRetry(url, options, retries = 5, delay = 1000) {
       try {
         const response = await fetch(url, options);
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        if (!response.ok) {
+          const errBody = await response.text();
+          throw new Error(`HTTP ${response.status}: ${errBody}`);
+        }
         return await response.json();
       } catch (error) {
         if (retries > 0) {
@@ -365,54 +428,72 @@
       });
     }
 
-    // [핵심 OCR 가속 비법] 구글의 최첨단 Gemini 2.5 Flash Vision API 연계 데이터 정밀 추출기
+    // [핵심 OCR 가속 비결] 구글의 최첨단 Gemini 2.5 Flash Vision API 연계 데이터 정밀 추출기
     async function performOcrWithGeminiVision(base64Data, type) {
+      // 로드된 Key가 없을 시 런타임 Key 연계 (가상 런타임 환경 토큰 주입 대비)
+      const currentKey = savedApiKey || "";
+      
+      if (!currentKey) {
+        throw new Error("우측 상단 톱니바퀴 설정을 눌러 Gemini API Key를 먼저 입력해주세요.");
+      }
+
       const model = "gemini-2.5-flash-preview-09-2025";
-      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${currentKey}`;
 
       let promptText = "";
       let responseSchema = {};
 
       if (type === "closing") {
-        promptText = `지하철 역사 정산 시스템의 수시마감 보고서 이미지입니다. 표에 나타나 있는 '장비번호'별 정산 상세 필드를 정확히 판독하여 JSON 형식으로만 응답해주세요. 수입금액 항목(A-B+C-D, A-B 등)과 발매건수, 발매금액, 충전금액, 정산금액, 환급금액이 정확히 행별로 일치하게 매핑되어야 합니다.`;
+        promptText = `지하철 역사 정산 시스템의 수시마감 보고서 이미지입니다. 표에 나타나 있는 '장비번호'별 정산 상세 필드를 정확히 판독하여 JSON 형식으로 응답해주세요. 수입금액 항목(A-B+C-D, A-B 등)과 발매건수, 발매금액, 충전금액, 정산금액, 환급금액이 정확히 행별로 일치하게 매핑되어야 합니다.`;
         responseSchema = {
-          type: "ARRAY",
-          items: {
-            type: "OBJECT",
-            properties: {
-              id: { type: "STRING", description: "장비번호 (예: 150, 151, 165)" },
-              startTime: { type: "STRING", description: "영업시작일시 (YYYY/MM/DD HH:MM:SS 형식)" },
-              endTime: { type: "STRING", description: "영업종료일시 (YYYY/MM/DD HH:MM:SS 형식)" },
-              revenue1: { type: "INTEGER", description: "수입금액(A-B+C-D)" },
-              revenue2: { type: "INTEGER", description: "수입금액(A-B)" },
-              ticketCount: { type: "INTEGER", description: "발매건수" },
-              ticketAmount: { type: "INTEGER", description: "발매금액" },
-              chargingAmount: { type: "INTEGER", description: "충전금액" },
-              settlementAmount: { type: "INTEGER", description: "정산금액" },
-              refundAmount: { type: "INTEGER", description: "환급금액" }
-            },
-            required: ["id", "startTime", "endTime", "revenue1", "revenue2"]
-          }
+          type: "OBJECT",
+          properties: {
+            data: {
+              type: "ARRAY",
+              items: {
+                type: "OBJECT",
+                properties: {
+                  id: { type: "STRING", description: "장비번호 (예: 150, 151, 165)" },
+                  startTime: { type: "STRING", description: "영업시작일시 (YYYY/MM/DD HH:MM:SS 형식)" },
+                  endTime: { type: "STRING", description: "영업종료일시 (YYYY/MM/DD HH:MM:SS 형식)" },
+                  revenue1: { type: "INTEGER", description: "수입금액(A-B+C-D)" },
+                  revenue2: { type: "INTEGER", description: "수입금액(A-B)" },
+                  ticketCount: { type: "INTEGER", description: "발매건수" },
+                  ticketAmount: { type: "INTEGER", description: "발매금액" },
+                  chargingAmount: { type: "INTEGER", description: "충전금액" },
+                  settlementAmount: { type: "INTEGER", description: "정산금액" },
+                  refundAmount: { type: "INTEGER", description: "환급금액" }
+                },
+                required: ["id", "startTime", "endTime", "revenue1", "revenue2"]
+              }
+            }
+          },
+          required: ["data"]
         };
       } else {
         promptText = `정기권 충전내역 상세 조회 테이블 이미지입니다. 표 안의 모든 거래 행들을 JSON으로 추출해 주세요. 장비번호, 충전일시, 작업구분(충전), 카드 ID(101000******94790000 와 같은 마스킹 형태 포함), 충전금액 정보를 정확히 구조화해 주세요.`;
         responseSchema = {
-          type: "ARRAY",
-          items: {
-            type: "OBJECT",
-            properties: {
-              deviceId: { type: "STRING", description: "장비번호" },
-              chargeTime: { type: "STRING", description: "충전일시 (YYYY/MM/DD HH:MM:SS 형식)" },
-              workType: { type: "STRING", description: "작업구분 (예: 충전)" },
-              cardId: { type: "STRING", description: "카드 ID" },
-              amount: { type: "INTEGER", description: "충전금액" }
-            },
-            required: ["deviceId", "chargeTime", "amount"]
-          }
+          type: "OBJECT",
+          properties: {
+            data: {
+              type: "ARRAY",
+              items: {
+                type: "OBJECT",
+                properties: {
+                  deviceId: { type: "STRING", description: "장비번호" },
+                  chargeTime: { type: "STRING", description: "충전일시 (YYYY/MM/DD HH:MM:SS 형식)" },
+                  workType: { type: "STRING", description: "작업구분 (예: 충전)" },
+                  cardId: { type: "STRING", description: "카드 ID" },
+                  amount: { type: "INTEGER", description: "충전금액" }
+                },
+                required: ["deviceId", "chargeTime", "amount"]
+              }
+            }
+          },
+          required: ["data"]
         };
       }
 
-      // Base64 Prefix strip
       const cleanBase64 = base64Data.split(',')[1];
 
       const payload = {
@@ -444,13 +525,13 @@
       const extractedText = responseData.candidates?.[0]?.content?.parts?.[0]?.text;
       
       if (!extractedText) {
-        throw new Error("API 응답에서 추출된 텍스트가 비어 있습니다.");
+        throw new Error("API가 결과를 출력하지 못했습니다.");
       }
 
       return JSON.parse(extractedText);
     }
 
-    // 실제 업로드 파일 처리 컨트롤러 (Gemini API 기반으로 가속)
+    // 실제 업로드 파일 처리 컨트롤러
     async function handleImageUpload(event, type) {
       const file = event.target.files[0];
       if (!file) return;
@@ -467,7 +548,7 @@
 
       // UI 진행 상태 갱신
       spinner.classList.remove('hidden');
-      statusText.innerHTML = `<i class="fa-solid fa-bolt text-amber-500"></i> 모바일 이미지 전처리 압축 중...`;
+      statusText.innerHTML = `<i class="fa-solid fa-bolt text-amber-500"></i> 이미지 전처리 인코딩 중...`;
 
       try {
         // 전처리 수행
@@ -481,7 +562,8 @@
         statusText.innerHTML = `<i class="fa-solid fa-brain text-indigo-500 animate-pulse"></i> Gemini 인공지능 분석기로 정밀 OCR 분석 중 (1~2초)...`;
 
         // Gemini Vision API 호출
-        const parsedData = await performOcrWithGeminiVision(optimizedImgUrl, type);
+        const parsedObject = await performOcrWithGeminiVision(optimizedImgUrl, type);
+        const parsedData = parsedObject.data;
 
         if (type === 'closing') {
           if (parsedData && parsedData.length > 0) {
@@ -493,7 +575,7 @@
             statusText.innerHTML = `<span class='text-emerald-600 font-bold'>✓ 인공지능 분석 완료</span> (장비 ${parsedData.length}대 추출)`;
             showToast(`이미지 내 ${parsedData.length}개의 수시마감 데이터를 정상 추출했습니다.`, 'success');
           } else {
-            throw new Error("인식된 데이터 행이 없습니다.");
+            throw new Error("인식된 데이터 장비가 테이블 상에 존재하지 않습니다.");
           }
         } else {
           if (parsedData && parsedData.length > 0) {
@@ -505,12 +587,12 @@
             statusText.innerHTML = `<span class='text-emerald-600 font-bold'>✓ 인공지능 분석 완료</span> (정기권 ${parsedData.length}건 추출)`;
             showToast(`정기권 거래내역 ${parsedData.length}건을 성공적으로 추출했습니다.`, 'success');
           } else {
-            throw new Error("인식된 데이터 행이 없습니다.");
+            throw new Error("인식된 정기권 충전 거래 내역이 존재하지 않습니다.");
           }
         }
       } catch (e) {
-        console.error("인공지능 분석 실패:", e);
-        statusText.innerHTML = "<span class='text-red-600 font-bold'>⚠️ 인공지능 분석 실패</span> (데이터가 올바른 장표인지 확인하세요)";
+        console.error("인공지능 분석 실패 상세 로그:", e);
+        statusText.innerHTML = `<span class='text-red-600 font-bold'>⚠️ 인공지능 분석 실패:</span> <span class="text-xs text-slate-500">${e.message}</span>`;
         showToast('정밀 OCR 분석에 실패했습니다. 올바른 영수증 장표 사진인지 확인해주세요.', 'error');
       } finally {
         spinner.classList.add('hidden');
@@ -868,6 +950,7 @@
     }
 
     window.onload = function() {
+      checkApiKeyPresence();
       renderClosingTable();
       renderPassTable();
     };
